@@ -2,12 +2,9 @@ import argparse
 import json
 import os
 from txtai.pipeline import Similarity
-from txtai.embeddings import Embeddings
-from datetime import datetime
 import logging
 import numpy as np
 from dataclasses import dataclass
-from urllib.parse import urlparse
 
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
@@ -23,11 +20,18 @@ class Seller:
     pages: list
     records: list
 
-    def find_record_with_highest_match(self, similarity, query):
+    def find_record_with_best_match(self, similarity, query):
+        """
+        Finds the record with the highest similarity score
+        :param similarity:
+        :param query:
+        :return: A tuple of float, dict, Seller
+        """
         results = similarity(query, [record["text"] for record in self.records])
         similarity_scores = [score for _, score in results]
-        best_match = np.argmax(similarity_scores)
-        return self.records[best_match]
+        index_of_best_match = np.argmax(similarity_scores)
+        best_score = similarity_scores[index_of_best_match]
+        return (best_score, self.records[index_of_best_match], self)
 
     def __hash__(self):
         return hash(self.mongo_id)
@@ -43,12 +47,7 @@ def load_data(folder):
     :return:
     """
     path = f"../{folder}"
-    sellers = []
-    counter = 0
     for filename in os.listdir(path):
-        if counter > 20:
-            break
-        counter += 1
         records = []
         with open(f"{path}/{filename}", "r") as f:
             dataset = json.load(f)
@@ -83,22 +82,9 @@ def find_top_n_sellers_with_highest_similarity_scores(query, sellers, n=5):
     logging.info("Loading similarity model")
     similarity = Similarity()
     logging.info("Finished loading similarity model")
-    time_taken_in_seconds = []
-    similarity_scores = []
-    for seller in sellers:
-        start = datetime.now()
-        logging.info("starting similarity")
-        results = similarity(query, [record["text"] for record in seller.records])
-        logging.info("ending similarity")
-        end = datetime.now()
-        time_taken_in_seconds.append((end-start).microseconds/ 1000)
-        mean_similarity_score = np.mean([score for _, score in results])
-        similarity_scores.append(mean_similarity_score)
-        print(f"Similarity for {seller.website} is {mean_similarity_score}")
-
-    logging.debug(f"Mean time taken to compute similarity {np.mean(time_taken_in_seconds)}")
-    indices_of_top_matches = -np.array(similarity_scores).argsort()[:n]
-    return np.array(sellers)[indices_of_top_matches]
+    best_matches = [seller.find_record_with_best_match(similarity, query) for seller in sellers]
+    best_matches.sort(key=lambda element: element[0], reverse=True)
+    return best_matches[:n]
 
 
 if __name__ == "__main__":
@@ -113,6 +99,6 @@ if __name__ == "__main__":
     top_matches = find_top_n_sellers_with_highest_similarity_scores(args.request_description, sellers, n=5)
 
     print("-------TOP MATCHES--------------")
-    for match in top_matches:
-        print(match.website)
+    for score, record, seller in top_matches:
+        print(score, seller.website, record)
     print("--------------------------------")
