@@ -45,5 +45,5 @@ So this is simply a best guess without going into the specifics of each service.
 5. AWS Firehose to stream and transform crawled data to AWS Opensearch
 
 
-![img.png](img.png)
+![AWS Design.png](AWS Design.png)
 
