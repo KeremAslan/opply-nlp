@@ -28,7 +28,7 @@ such that only the query needs to be tokenized at runtime.
    1. We can shard the index for more efficient searching: https://github.com/neuml/txtai/blob/master/examples/15_Distributed_embeddings_cluster.ipynb
 2. Feature engineering and data cleaning:
    1. Nearly all websites contain subpages that may not be really relevant to what we are trying to do. We can likely achieve better result
-   if we can preprocess the data by e.g. removing unnecessary subpages, or adding tags and labels to the website. 
+   if we can preprocess the data by e.g. removing unnecessary subpages, or adding tags and labels to the website to allow for easier matching. 
    2. We can include images in our dataset - it may be helpful in improving our ranking (if for example we always expect a picture of almonds for such a query)
    3. We can further clean up the body of text by removing stop words and words that are very common (e.g. the, and). 
 3. We can try out different pre-trained models. Some may work better than others for our use case.

@@ -42,7 +42,7 @@ class Seller:
 
 def load_data(folder):
     """
-    Loads data from the specified folder and returns a list of dictionaries
+    Loads data from the specified folder and returns a list of `Seller`s
     :param folder:
     :return:
     """
