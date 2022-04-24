@@ -1,52 +1,21 @@
 import argparse
 import json
-import os
-from txtai.pipeline import Similarity
 import logging
-import numpy as np
-from dataclasses import dataclass
+import os
 
+from models import Seller, Matcher
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
 
-@dataclass
-class Seller:
-    """
-    A data class to hold all the data corresponding to a seller
-    """
-    mongo_id: str
-    website: str
-    pages: list
-    records: list
-
-    def find_record_with_best_match(self, similarity, query):
-        """
-        Finds the record with the highest similarity score
-        :param similarity:
-        :param query:
-        :return: A tuple of float, dict, Seller
-        """
-        results = similarity(query, [record["text"] for record in self.records])
-        similarity_scores = [score for _, score in results]
-        index_of_best_match = np.argmax(similarity_scores)
-        best_score = similarity_scores[index_of_best_match]
-        return (best_score, self.records[index_of_best_match], self)
-
-    def __hash__(self):
-        return hash(self.mongo_id)
-
-    def __eq__(self, other):
-        return self.mongo_id == other.mongo_id
-
-
-def load_data(folder):
+def load_data(folder: str) -> list[Seller]:
     """
     Loads data from the specified folder and returns a list of `Seller`s
     :param folder:
     :return:
     """
     path = f"../{folder}"
+    sellers = []
     for filename in os.listdir(path):
         records = []
         with open(f"{path}/{filename}", "r") as f:
@@ -62,7 +31,7 @@ def load_data(folder):
     return sellers
 
 
-def create_parser():
+def create_parser() -> argparse.ArgumentParser:
     """
     Creates the parser required to parse CLI arguments
     :return:
@@ -74,19 +43,6 @@ def create_parser():
     return parser
 
 
-def find_top_n_sellers_with_highest_similarity_scores(query, sellers, n=5):
-    """
-    Finds the top n sellers with the highest similarity scores.
-    The similarity score is defined as the mean score per website across all its pages.
-    """
-    logging.info("Loading similarity model")
-    similarity = Similarity()
-    logging.info("Finished loading similarity model")
-    best_matches = [seller.find_record_with_best_match(similarity, query) for seller in sellers]
-    best_matches.sort(key=lambda element: element[0], reverse=True)
-    return best_matches[:n]
-
-
 if __name__ == "__main__":
     # get query
     parser = create_parser()
@@ -96,7 +52,8 @@ if __name__ == "__main__":
     sellers = load_data(args.path_to_folder)
 
     # find top n matches
-    top_matches = find_top_n_sellers_with_highest_similarity_scores(args.request_description, sellers, n=5)
+    matcher = Matcher()
+    top_matches = matcher.find_top_n_sellers_with_highest_similarity_scores(args.request_description, sellers, n=5)
 
     print("-------TOP MATCHES--------------")
     for score, record, seller in top_matches:
