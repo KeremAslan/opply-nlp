@@ -40,6 +40,8 @@ class Matcher:
     def __init__(self, similarity: Similarity = None):
         if similarity is None:
             self.similarity = Similarity()
+        else:
+            self.similarity = similarity
 
     def find_top_n_sellers_with_highest_similarity_scores(self, query: str, sellers: list[Seller], n: int = 5) -> \
             list[(float, dict, Seller)]:
